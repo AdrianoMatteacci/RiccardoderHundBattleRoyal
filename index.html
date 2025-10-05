@@ -49,6 +49,15 @@
             z-index: 10;
             text-align: center;
         }
+        .rock-image {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            border: 5px solid #ffd700;
+            margin-bottom: 1rem;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+            object-fit: cover;
+        }
         h1 {
             font-size: 4rem;
             color: white;
@@ -286,6 +295,10 @@
         <div id="menuScreen" class="screen menu-screen active">
             <div class="menu-blocks" id="menuBlocks"></div>
             <div class="menu-content">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/1/11/Dwayne_%22The_Rock%22_Johnson_Visits_the_Pentagon_%2841%29_%28cropped%29.jpg" 
+                     alt="The Rock" 
+                     class="rock-image"
+                     crossorigin="anonymous">
                 <h1>RICCARDO MATTEACCI</h1>
                 <div class="subtitle">⚔️ Battle Royale ⚔️</div>
                 <div class="stats-box">
@@ -389,7 +402,6 @@
     </div>
 
     <script>
-        // Game State
         let gameState = 'menu';
         let player = {
             health: 100,
@@ -413,6 +425,9 @@
         let canvas, ctx;
         let animationId;
         let gameTime = 0;
+        let rockImage = new Image();
+        rockImage.crossOrigin = 'anonymous';
+        rockImage.src = 'https://upload.wikimedia.org/wikipedia/commons/1/11/Dwayne_%22The_Rock%22_Johnson_Visits_the_Pentagon_%2841%29_%28cropped%29.jpg';
 
         const weapons = [
             { name: 'Holzschwert', damage: 10, cost: 0 },
@@ -436,7 +451,6 @@
             { name: 'Schutzschild', effect: 'shield', cost: 300 }
         ];
 
-        // Initialize
         window.onload = function() {
             canvas = document.getElementById('gameCanvas');
             ctx = canvas.getContext('2d');
@@ -669,7 +683,6 @@
             gameTime += 0.016;
             stormRadius = Math.max(150, stormRadius - 0.2);
 
-            // Player movement
             let newX = player.position.x;
             let newZ = player.position.z;
             const moveSpeed = player.speed * 2.5;
@@ -687,7 +700,6 @@
             player.position.x = newX;
             player.position.z = newZ;
 
-            // Bot AI
             bots = bots.map(bot => {
                 const dx = player.position.x - bot.x;
                 const dz = player.position.z - bot.z;
@@ -741,7 +753,6 @@
                 return { ...bot, x: newX, z: newZ };
             });
 
-            // Bullets
             bullets = bullets.map(b => ({
                 ...b,
                 x: b.x + b.vx * 6,
@@ -749,7 +760,6 @@
                 life: b.life - 1
             })).filter(b => b.life > 0);
 
-            // Bullet collision with player
             bullets = bullets.filter(bullet => {
                 if (bullet.owner === 'bot') {
                     const dx = bullet.x - player.position.x;
@@ -770,7 +780,6 @@
                 return true;
             });
 
-            // Bullet collision with bots
             bullets = bullets.filter(bullet => {
                 if (bullet.owner === 'player') {
                     for (let i = 0; i < bots.length; i++) {
@@ -795,7 +804,6 @@
                 return true;
             });
 
-            // Check win/lose
             if (player.health <= 0) {
                 document.getElementById('defeatPlace').textContent = playersAlive;
                 document.getElementById('defeatKills').textContent = player.kills;
@@ -828,11 +836,9 @@
         }
 
         function render() {
-            // Sky
             ctx.fillStyle = '#87CEEB';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Ground blocks
             for (let x = -600; x < 600; x += 40) {
                 for (let z = -400; z < 400; z += 40) {
                     const screenX = canvas.width / 2 + (x - player.position.x) * 1.5;
@@ -848,7 +854,6 @@
                 }
             }
 
-            // Storm border
             const stormScreenRadius = stormRadius * 1.5;
             ctx.strokeStyle = '#8B008B';
             ctx.lineWidth = 5;
@@ -856,28 +861,22 @@
             ctx.arc(canvas.width / 2, canvas.height / 2, stormScreenRadius, 0, Math.PI * 2);
             ctx.stroke();
 
-            // Render bots
             bots.forEach(bot => {
                 const screenX = canvas.width / 2 + (bot.x - player.position.x) * 1.5;
                 const screenY = canvas.height / 2 + (bot.z - player.position.z) * 1.2;
                 
                 if (screenX > -100 && screenX < canvas.width + 100 && screenY > -100 && screenY < canvas.height + 100) {
-                    // Body
                     ctx.fillStyle = bot.color;
                     ctx.fillRect(screenX - 12, screenY - 35, 24, 35);
-                    // Head
                     ctx.fillStyle = '#FFD7A6';
                     ctx.fillRect(screenX - 10, screenY - 45, 20, 18);
-                    // Eyes
                     ctx.fillStyle = '#000';
                     ctx.fillRect(screenX - 6, screenY - 40, 4, 4);
                     ctx.fillRect(screenX + 2, screenY - 40, 4, 4);
-                    // Legs
                     ctx.fillStyle = '#1565C0';
                     ctx.fillRect(screenX - 10, screenY, 8, 12);
                     ctx.fillRect(screenX + 2, screenY, 8, 12);
                     
-                    // Health bar
                     ctx.fillStyle = '#333';
                     ctx.fillRect(screenX - 20, screenY - 55, 40, 5);
                     const healthPercent = bot.health / bot.maxHealth;
@@ -886,7 +885,6 @@
                 }
             });
 
-            // Render bullets
             bullets.forEach(bullet => {
                 const screenX = canvas.width / 2 + (bullet.x - player.position.x) * 1.5;
                 const screenY = canvas.height / 2 + (bullet.z - player.position.z) * 1.2;
@@ -894,10 +892,24 @@
                 ctx.fillRect(screenX - 4, screenY - 4, 8, 8);
             });
 
-            // Crosshair
-            ctx.fillStyle = '#FFF';
-            ctx.fillRect(canvas.width / 2 - 15, canvas.height / 2 - 2, 30, 4);
-            ctx.fillRect(canvas.width / 2 - 2, canvas.height / 2 - 15, 4, 30);
+            if (rockImage.complete && rockImage.naturalWidth > 0) {
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(canvas.width / 2, canvas.height / 2, 25, 0, Math.PI * 2);
+                ctx.clip();
+                ctx.drawImage(rockImage, canvas.width / 2 - 25, canvas.height / 2 - 25, 50, 50);
+                ctx.restore();
+                
+                ctx.strokeStyle = '#FFF';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.arc(canvas.width / 2, canvas.height / 2, 25, 0, Math.PI * 2);
+                ctx.stroke();
+            } else {
+                ctx.fillStyle = '#FFF';
+                ctx.fillRect(canvas.width / 2 - 15, canvas.height / 2 - 2, 30, 4);
+                ctx.fillRect(canvas.width / 2 - 2, canvas.height / 2 - 15, 4, 30);
+            }
         }
     </script>
 </body>
