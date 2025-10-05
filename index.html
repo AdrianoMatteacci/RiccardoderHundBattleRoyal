@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Riccardo Matteacci - Battle Royale</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: monospace;
+            overflow: hidden;
+        }
+        #app {
+            width: 100vw;
+            height: 100vh;
+        }
+        .screen {
+            display: none;
+            width: 100%;
+            height: 100%;
+        }
+        .screen.active {
+            display: flex;
+        }
+        .menu-screen {
+            background: linear-gradient(135deg, #1b5e20, #2e7d32, #1b5e20);
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .menu-blocks {
+            position: absolute;
+            inset: 0;
+            opacity: 0.1;
+        }
+        .menu-block {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background: #43a047;
+        }
+        .menu-content {
+            z-index: 10;
+            text-align: center;
+        }
+        h1 {
+            font-size: 4rem;
+            color: white;
+            text-shadow: 4px 4px 8px rgba(0,0,0,0.5);
+            margin-bottom: 0.5rem;
+        }
+        .subtitle {
+            font-size: 2rem;
+            color: #ffd700;
+            margin-bottom: 2rem;
+        }
+        .stats-box {
+            background: rgba(0,0,0,0.6);
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            color: white;
+        }
+        .stats-box div {
+            margin: 0.5rem 0;
+            font-size: 1.2rem;
+        }
+        button {
+            font-family: monospace;
+            font-size: 1.5rem;
+            font-weight: bold;
+            padding: 1rem 3rem;
+            margin: 0.5rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+        button:hover {
+            transform: scale(1.05);
+        }
+        .btn-play {
+            background: #43a047;
+            color: white;
+        }
+        .btn-shop {
+            background: #fbc02d;
+            color: black;
+        }
+        .shop-screen, .pause-screen {
+            background: linear-gradient(135deg, #1a1a1a, #2d2d2d, #1a1a1a);
+            flex-direction: column;
+            padding: 2rem;
+            overflow-y: auto;
+        }
+        .shop-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+        .shop-title {
+            font-size: 3rem;
+            color: #ffd700;
+        }
+        .coins {
+            font-size: 2rem;
+            color: #ffd700;
+        }
+        .btn-back {
+            background: #d32f2f;
+            color: white;
+            padding: 0.75rem 2rem;
+            font-size: 1.2rem;
+        }
+        .shop-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .shop-category {
+            background: #424242;
+            padding: 1.5rem;
+            border-radius: 10px;
+            border: 4px solid #616161;
+        }
+        .category-title {
+            font-size: 1.8rem;
+            color: white;
+            margin-bottom: 1rem;
+        }
+        .shop-item {
+            background: #616161;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            border-radius: 8px;
+            border: 2px solid #757575;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .item-info {
+            color: white;
+        }
+        .item-name {
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+        .item-stats {
+            color: #e0e0e0;
+            font-size: 0.9rem;
+        }
+        .btn-buy {
+            padding: 0.5rem 1rem;
+            font-size: 1rem;
+            background: #fbc02d;
+            color: black;
+        }
+        .btn-buy:disabled {
+            background: #757575;
+            color: #9e9e9e;
+            cursor: not-allowed;
+        }
+        .btn-buy.owned {
+            background: #388e3c;
+            color: white;
+        }
+        .game-screen {
+            background: black;
+            position: relative;
+        }
+        #gameCanvas {
+            width: 100%;
+            height: 100%;
+        }
+        .hud {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            background: rgba(0,0,0,0.8);
+            padding: 1rem;
+            border-radius: 8px;
+            color: white;
+            border: 2px solid #666;
+        }
+        .hud-title {
+            font-size: 1.5rem;
+            color: #ffd700;
+            margin-bottom: 0.75rem;
+        }
+        .hud-stat {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .stat-bar {
+            width: 150px;
+            height: 16px;
+            background: #444;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .stat-fill {
+            height: 100%;
+            transition: width 0.3s;
+        }
+        .hp-fill { background: #4caf50; }
+        .armor-fill { background: #2196f3; }
+        .game-controls {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            display: flex;
+            gap: 0.5rem;
+        }
+        .btn-game {
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+        }
+        .controls-help {
+            position: absolute;
+            bottom: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            padding: 1rem;
+            border-radius: 8px;
+            color: white;
+            border: 2px solid #666;
+            text-align: center;
+        }
+        .victory-screen, .defeat-screen {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,0,0,0.7);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s;
+        }
+        .victory-screen.show, .defeat-screen.show {
+            opacity: 1;
+        }
+        .victory-content, .defeat-content {
+            text-align: center;
+            color: white;
+        }
+        .victory-icon {
+            font-size: 8rem;
+            animation: bounce 1s infinite;
+        }
+        .victory-title {
+            font-size: 4rem;
+            color: #ffd700;
+            margin: 1rem 0;
+        }
+        .defeat-title {
+            font-size: 4rem;
+            color: #f44336;
+            margin: 1rem 0;
+        }
+        .result-text {
+            font-size: 2rem;
+            margin: 0.5rem 0;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div id="menuScreen" class="screen menu-screen active">
+            <div class="menu-blocks" id="menuBlocks"></div>
+            <div class="menu-content">
+                <h1>RICCARDO MATTEACCI</h1>
+                <div class="subtitle">⚔️ Battle Royale ⚔️</div>
+                <div class="stats-box">
+                    <div>Runde: <span id="roundDisplay">1</span></div>
+                    <div style="color: #4caf50">Siege: <span id="winsDisplay">0</span></div>
+                    <div style="color: #f44336">Kills gesamt: <span id="totalKillsDisplay">0</span></div>
+                    <div style="color: #ffd700; font-size: 1.5rem">💰 <span id="coinsDisplay">1000</span> Coins</div>
+                </div>
+                <button class="btn-play" onclick="startNewRound()">▶ NEUE RUNDE</button>
+                <button class="btn-shop" onclick="showShop()">🛒 SHOP</button>
+            </div>
+        </div>
+
+        <div id="shopScreen" class="screen shop-screen">
+            <div class="shop-header">
+                <div class="shop-title">🏪 SHOP</div>
+                <div class="coins">💰 <span id="shopCoins">1000</span></div>
+                <button class="btn-back" onclick="showMenu()">← MENU</button>
+            </div>
+            <div class="shop-grid">
+                <div class="shop-category">
+                    <div class="category-title">⚔️ Waffen</div>
+                    <div id="weaponsList"></div>
+                </div>
+                <div class="shop-category">
+                    <div class="category-title">📈 Upgrades</div>
+                    <div id="upgradesList"></div>
+                </div>
+                <div class="shop-category">
+                    <div class="category-title">✨ Items</div>
+                    <div id="itemsList"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="pauseScreen" class="screen shop-screen">
+            <div class="shop-header">
+                <div class="shop-title">🏪 SHOP</div>
+                <div class="coins">💰 <span id="pauseCoins">1000</span></div>
+                <button class="btn-back" onclick="resumeGame()">← ZURÜCK</button>
+            </div>
+            <div class="shop-grid">
+                <div class="shop-category">
+                    <div class="category-title">⚔️ Waffen</div>
+                    <div id="pauseWeaponsList"></div>
+                </div>
+                <div class="shop-category">
+                    <div class="category-title">📈 Upgrades</div>
+                    <div id="pauseUpgradesList"></div>
+                </div>
+                <div class="shop-category">
+                    <div class="category-title">✨ Items</div>
+                    <div id="pauseItemsList"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="gameScreen" class="screen game-screen">
+            <canvas id="gameCanvas" width="1200" height="700"></canvas>
+            <div class="hud">
+                <div class="hud-title">RUNDE <span id="gameRound">1</span></div>
+                <div class="hud-stat">
+                    <span style="color: #4caf50; font-weight: bold">❤️ <span id="hpText">100</span>/100</span>
+                    <div class="stat-bar"><div class="stat-fill hp-fill" id="hpBar" style="width: 100%"></div></div>
+                </div>
+                <div class="hud-stat">
+                    <span style="color: #2196f3; font-weight: bold">🛡️ <span id="armorText">0</span></span>
+                    <div class="stat-bar"><div class="stat-fill armor-fill" id="armorBar" style="width: 0%"></div></div>
+                </div>
+                <div style="color: #ffd700; font-size: 1.2rem; margin-top: 0.5rem">⚔️ <span id="weaponText">Holzschwert</span></div>
+                <div style="color: #f44336; font-size: 1.2rem; font-weight: bold">💀 <span id="killsText">0</span> Kills</div>
+                <div style="color: white; font-size: 1.2rem">👥 <span id="aliveText">7</span> übrig</div>
+                <div style="color: #ffd700; font-size: 1.2rem">💰 <span id="gameCoins">1000</span></div>
+            </div>
+            <div class="game-controls">
+                <button class="btn-game btn-shop" onclick="pauseGame()">🛒 SHOP</button>
+                <button class="btn-game btn-back" onclick="exitGame()">📋 MENU</button>
+            </div>
+            <div class="controls-help">
+                <div style="font-weight: bold; margin-bottom: 0.5rem">STEUERUNG</div>
+                <div>WASD - Bewegen | Maus - Zielen & Schießen | ESC - Pause</div>
+            </div>
+            <div class="victory-screen" id="victoryScreen">
+                <div class="victory-content">
+                    <div class="victory-icon">🏆</div>
+                    <div class="victory-title">🏆 EPISCHER SIEG! 🏆</div>
+                    <div class="result-text">Runde <span id="victoryRound">1</span> abgeschlossen!</div>
+                    <div class="result-text" style="color: #4caf50">Kills: <span id="victoryKills">0</span></div>
+                    <div class="result-text" style="color: #ffd700">+<span id="victoryCoins">500</span> Coins!</div>
+                </div>
+            </div>
+            <div class="defeat-screen" id="defeatScreen">
+                <div class="defeat-content">
+                    <div class="victory-icon">💀</div>
+                    <div class="defeat-title">💀 ELIMINIERT! 💀</div>
+                    <div class="result-text">#<span id="defeatPlace">7</span> Platz</div>
+                    <div class="result-text" style="color: #ffd700">Kills: <span id="defeatKills">0</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game State
+        let gameState = 'menu';
+        let player = {
+            health: 100,
+            maxHealth: 100,
+            armor: 0,
+            weapon: 'Holzschwert',
+            damage: 10,
+            speed: 1,
+            coins: 1000,
+            kills: 0,
+            position: { x: 0, y: 0, z: 0 },
+            totalKills: 0,
+            wins: 0
+        };
+        let bots = [];
+        let bullets = [];
+        let round = 1;
+        let playersAlive = 7;
+        let stormRadius = 500;
+        let keys = {};
+        let canvas, ctx;
+        let animationId;
+        let gameTime = 0;
+
+        const weapons = [
+            { name: 'Holzschwert', damage: 10, cost: 0 },
+            { name: 'Steinaxt', damage: 18, cost: 250 },
+            { name: 'Eisenschwert', damage: 25, cost: 500 },
+            { name: 'Diamantschwert', damage: 40, cost: 900 },
+            { name: 'Netherschwert', damage: 60, cost: 1500 }
+        ];
+
+        const upgrades = [
+            { name: 'Eisenrüstung +30 HP', type: 'armor', value: 30, cost: 300 },
+            { name: 'Diamantrüstung +50 HP', type: 'armor', value: 50, cost: 600 },
+            { name: 'Sprint +0.5', type: 'speed', value: 0.5, cost: 400 },
+            { name: 'Stärke +8', type: 'damage', value: 8, cost: 350 },
+            { name: 'Regeneration', type: 'maxHealth', value: 20, cost: 500 }
+        ];
+
+        const items = [
+            { name: 'Goldener Apfel', effect: 'heal', cost: 200 },
+            { name: 'Schnelligkeit Trank', effect: 'speedboost', cost: 250 },
+            { name: 'Schutzschild', effect: 'shield', cost: 300 }
+        ];
+
+        // Initialize
+        window.onload = function() {
+            canvas = document.getElementById('gameCanvas');
+            ctx = canvas.getContext('2d');
+            createMenuBlocks();
+            updateUI();
+            renderShop();
+
+            window.addEventListener('keydown', e => {
+                keys[e.key] = true;
+                if (e.key === 'Escape' && gameState === 'playing') {
+                    pauseGame();
+                }
+            });
+            window.addEventListener('keyup', e => keys[e.key] = false);
+            canvas.addEventListener('click', handleShoot);
+        };
+
+        function createMenuBlocks() {
+            const container = document.getElementById('menuBlocks');
+            for (let i = 0; i < 20; i++) {
+                const block = document.createElement('div');
+                block.className = 'menu-block';
+                block.style.left = Math.random() * 100 + '%';
+                block.style.top = Math.random() * 100 + '%';
+                container.appendChild(block);
+            }
+        }
+
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        function showMenu() {
+            gameState = 'menu';
+            showScreen('menuScreen');
+            updateUI();
+        }
+
+        function showShop() {
+            gameState = 'shop';
+            showScreen('shopScreen');
+            renderShop();
+        }
+
+        function pauseGame() {
+            if (gameState === 'playing') {
+                gameState = 'pause';
+                showScreen('pauseScreen');
+                renderShop('pause');
+                if (animationId) cancelAnimationFrame(animationId);
+            }
+        }
+
+        function resumeGame() {
+            gameState = 'playing';
+            showScreen('gameScreen');
+            gameLoop();
+        }
+
+        function exitGame() {
+            if (animationId) cancelAnimationFrame(animationId);
+            showMenu();
+        }
+
+        function startNewRound() {
+            const botCount = Math.min(5 + round, 10);
+            bots = [];
+            
+            for (let i = 0; i < botCount; i++) {
+                const angle = (i / botCount) * Math.PI * 2;
+                const distance = 300 + Math.random() * 200;
+                bots.push({
+                    id: i,
+                    x: Math.cos(angle) * distance,
+                    y: 0,
+                    z: Math.sin(angle) * distance,
+                    health: 80 + round * 15,
+                    maxHealth: 80 + round * 15,
+                    speed: 0.6 + round * 0.1,
+                    damage: 8 + round * 2,
+                    ai: Math.random() > 0.5 ? 'aggressive' : 'tactical',
+                    lastShot: 0,
+                    color: `hsl(${Math.random() * 360}, 70%, 50%)`
+                });
+            }
+            
+            bullets = [];
+            playersAlive = botCount + 1;
+            stormRadius = 500;
+            player.health = player.maxHealth;
+            player.position = { x: 0, y: 0, z: 0 };
+            player.kills = 0;
+            gameTime = 0;
+            
+            gameState = 'playing';
+            showScreen('gameScreen');
+            document.getElementById('victoryScreen').classList.remove('show');
+            document.getElementById('defeatScreen').classList.remove('show');
+            updateUI();
+            gameLoop();
+        }
+
+        function updateUI() {
+            document.getElementById('roundDisplay').textContent = round;
+            document.getElementById('winsDisplay').textContent = player.wins;
+            document.getElementById('totalKillsDisplay').textContent = player.totalKills;
+            document.getElementById('coinsDisplay').textContent = player.coins;
+            document.getElementById('shopCoins').textContent = player.coins;
+            document.getElementById('pauseCoins').textContent = player.coins;
+            document.getElementById('gameCoins').textContent = player.coins;
+            document.getElementById('gameRound').textContent = round;
+            document.getElementById('weaponText').textContent = player.weapon;
+            document.getElementById('killsText').textContent = player.kills;
+            document.getElementById('aliveText').textContent = playersAlive;
+            
+            const hp = Math.ceil(player.health);
+            document.getElementById('hpText').textContent = hp;
+            document.getElementById('hpBar').style.width = (player.health / player.maxHealth * 100) + '%';
+            
+            const armor = Math.ceil(player.armor);
+            document.getElementById('armorText').textContent = armor;
+            document.getElementById('armorBar').style.width = Math.min(100, player.armor) + '%';
+        }
+
+        function renderShop(prefix = '') {
+            const weaponsList = document.getElementById((prefix ? 'pause' : '') + (prefix ? 'Weapons' : 'weapons') + 'List');
+            const upgradesList = document.getElementById((prefix ? 'pause' : '') + (prefix ? 'Upgrades' : 'upgrades') + 'List');
+            const itemsList = document.getElementById((prefix ? 'pause' : '') + (prefix ? 'Items' : 'items') + 'List');
+
+            weaponsList.innerHTML = weapons.map((w, i) => `
+                <div class="shop-item">
+                    <div class="item-info">
+                        <div class="item-name">${w.name}</div>
+                        <div class="item-stats">⚡ Schaden: ${w.damage}</div>
+                    </div>
+                    <button class="btn-buy ${player.weapon === w.name ? 'owned' : ''}" 
+                            onclick="buyWeapon(${i})" 
+                            ${player.weapon === w.name || player.coins < w.cost ? 'disabled' : ''}>
+                        ${player.weapon === w.name ? '✓' : w.cost + ' 💰'}
+                    </button>
+                </div>
+            `).join('');
+
+            upgradesList.innerHTML = upgrades.map((u, i) => `
+                <div class="shop-item">
+                    <div class="item-info">
+                        <div class="item-name">${u.name}</div>
+                    </div>
+                    <button class="btn-buy" onclick="buyUpgrade(${i})" ${player.coins < u.cost ? 'disabled' : ''}>
+                        ${u.cost} 💰
+                    </button>
+                </div>
+            `).join('');
+
+            itemsList.innerHTML = items.map((item, i) => `
+                <div class="shop-item">
+                    <div class="item-info">
+                        <div class="item-name">${item.name}</div>
+                    </div>
+                    <button class="btn-buy" onclick="buyItem(${i})" ${player.coins < item.cost ? 'disabled' : ''}>
+                        ${item.cost} 💰
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function buyWeapon(index) {
+            const weapon = weapons[index];
+            if (player.coins >= weapon.cost && player.weapon !== weapon.name) {
+                player.coins -= weapon.cost;
+                player.weapon = weapon.name;
+                player.damage = weapon.damage;
+                updateUI();
+                renderShop();
+                renderShop('pause');
+            }
+        }
+
+        function buyUpgrade(index) {
+            const upgrade = upgrades[index];
+            if (player.coins >= upgrade.cost) {
+                player.coins -= upgrade.cost;
+                player[upgrade.type] += upgrade.value;
+                updateUI();
+                renderShop();
+                renderShop('pause');
+            }
+        }
+
+        function buyItem(index) {
+            const item = items[index];
+            if (player.coins >= item.cost) {
+                player.coins -= item.cost;
+                if (item.effect === 'heal') {
+                    player.health = Math.min(player.maxHealth, player.health + 50);
+                }
+                updateUI();
+                renderShop();
+                renderShop('pause');
+            }
+        }
+
+        function handleShoot(e) {
+            if (gameState !== 'playing') return;
+            
+            const rect = canvas.getBoundingClientRect();
+            const centerX = rect.width / 2;
+            const centerY = rect.height / 2;
+            const clickX = e.clientX - rect.left;
+            const clickY = e.clientY - rect.top;
+            
+            const angle = Math.atan2(clickY - centerY, clickX - centerX);
+            
+            bullets.push({
+                x: player.position.x,
+                z: player.position.z,
+                vx: Math.cos(angle),
+                vz: Math.sin(angle),
+                life: 100,
+                damage: player.damage,
+                owner: 'player',
+                color: '#FFD700'
+            });
+        }
+
+        function gameLoop() {
+            if (gameState !== 'playing') return;
+
+            gameTime += 0.016;
+            stormRadius = Math.max(150, stormRadius - 0.2);
+
+            // Player movement
+            let newX = player.position.x;
+            let newZ = player.position.z;
+            const moveSpeed = player.speed * 2.5;
+            
+            if (keys['w'] || keys['W']) newZ -= moveSpeed;
+            if (keys['s'] || keys['S']) newZ += moveSpeed;
+            if (keys['a'] || keys['A']) newX -= moveSpeed;
+            if (keys['d'] || keys['D']) newX += moveSpeed;
+            
+            const distFromCenter = Math.sqrt(newX * newX + newZ * newZ);
+            if (distFromCenter > stormRadius) {
+                player.health = Math.max(0, player.health - 0.5);
+            }
+            
+            player.position.x = newX;
+            player.position.z = newZ;
+
+            // Bot AI
+            bots = bots.map(bot => {
+                const dx = player.position.x - bot.x;
+                const dz = player.position.z - bot.z;
+                const distToPlayer = Math.sqrt(dx * dx + dz * dz);
+                const distFromCenter = Math.sqrt(bot.x * bot.x + bot.z * bot.z);
+                
+                let newX = bot.x;
+                let newZ = bot.z;
+                
+                if (distFromCenter > stormRadius - 50) {
+                    const angleToCenter = Math.atan2(-bot.z, -bot.x);
+                    newX += Math.cos(angleToCenter) * bot.speed * 1.5;
+                    newZ += Math.sin(angleToCenter) * bot.speed * 1.5;
+                } else if (bot.ai === 'tactical') {
+                    if (distToPlayer < 100) {
+                        const retreatAngle = Math.atan2(dz, dx) + Math.PI;
+                        newX += Math.cos(retreatAngle) * bot.speed;
+                        newZ += Math.sin(retreatAngle) * bot.speed;
+                    } else if (distToPlayer < 200) {
+                        const circleAngle = Math.atan2(dz, dx) + Math.PI / 2;
+                        newX += Math.cos(circleAngle) * bot.speed * 0.7;
+                        newZ += Math.sin(circleAngle) * bot.speed * 0.7;
+                    } else {
+                        const approachAngle = Math.atan2(dz, dx);
+                        newX += Math.cos(approachAngle) * bot.speed;
+                        newZ += Math.sin(approachAngle) * bot.speed;
+                    }
+                } else {
+                    if (distToPlayer > 30) {
+                        const angle = Math.atan2(dz, dx);
+                        newX += Math.cos(angle) * bot.speed;
+                        newZ += Math.sin(angle) * bot.speed;
+                    }
+                }
+
+                if (distToPlayer < 250 && gameTime - bot.lastShot > 2) {
+                    const angle = Math.atan2(dz, dx);
+                    bullets.push({
+                        x: bot.x,
+                        z: bot.z,
+                        vx: Math.cos(angle),
+                        vz: Math.sin(angle),
+                        life: 120,
+                        damage: bot.damage,
+                        owner: 'bot',
+                        color: bot.color
+                    });
+                    return { ...bot, x: newX, z: newZ, lastShot: gameTime };
+                }
+
+                return { ...bot, x: newX, z: newZ };
+            });
+
+            // Bullets
+            bullets = bullets.map(b => ({
+                ...b,
+                x: b.x + b.vx * 6,
+                z: b.z + b.vz * 6,
+                life: b.life - 1
+            })).filter(b => b.life > 0);
+
+            // Bullet collision with player
+            bullets = bullets.filter(bullet => {
+                if (bullet.owner === 'bot') {
+                    const dx = bullet.x - player.position.x;
+                    const dz = bullet.z - player.position.z;
+                    const dist = Math.sqrt(dx * dx + dz * dz);
+                    
+                    if (dist < 20) {
+                        const dmg = bullet.damage;
+                        if (player.armor > 0) {
+                            player.armor = Math.max(0, player.armor - dmg / 2);
+                            player.health = Math.max(0, player.health - dmg / 2);
+                        } else {
+                            player.health = Math.max(0, player.health - dmg);
+                        }
+                        return false;
+                    }
+                }
+                return true;
+            });
+
+            // Bullet collision with bots
+            bullets = bullets.filter(bullet => {
+                if (bullet.owner === 'player') {
+                    for (let i = 0; i < bots.length; i++) {
+                        const bot = bots[i];
+                        const dx = bullet.x - bot.x;
+                        const dz = bullet.z - bot.z;
+                        const dist = Math.sqrt(dx * dx + dz * dz);
+                        
+                        if (dist < 20) {
+                            bot.health -= player.damage;
+                            if (bot.health <= 0) {
+                                bots.splice(i, 1);
+                                player.kills++;
+                                player.totalKills++;
+                                player.coins += 150 + round * 25;
+                                playersAlive--;
+                            }
+                            return false;
+                        }
+                    }
+                }
+                return true;
+            });
+
+            // Check win/lose
+            if (player.health <= 0) {
+                document.getElementById('defeatPlace').textContent = playersAlive;
+                document.getElementById('defeatKills').textContent = player.kills;
+                document.getElementById('defeatScreen').classList.add('show');
+                setTimeout(() => {
+                    if (animationId) cancelAnimationFrame(animationId);
+                    showMenu();
+                }, 3000);
+                return;
+            }
+            
+            if (bots.length === 0) {
+                player.wins++;
+                player.coins += 500 * round;
+                document.getElementById('victoryRound').textContent = round;
+                document.getElementById('victoryKills').textContent = player.kills;
+                document.getElementById('victoryCoins').textContent = 500 * round;
+                document.getElementById('victoryScreen').classList.add('show');
+                setTimeout(() => {
+                    if (animationId) cancelAnimationFrame(animationId);
+                    round++;
+                    showMenu();
+                }, 3000);
+                return;
+            }
+
+            updateUI();
+            render();
+            animationId = requestAnimationFrame(gameLoop);
+        }
+
+        function render() {
+            // Sky
+            ctx.fillStyle = '#87CEEB';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Ground blocks
+            for (let x = -600; x < 600; x += 40) {
+                for (let z = -400; z < 400; z += 40) {
+                    const screenX = canvas.width / 2 + (x - player.position.x) * 1.5;
+                    const screenY = canvas.height / 2 + (z - player.position.z) * 1.2;
+                    const distFromCenter = Math.sqrt(x * x + z * z);
+                    
+                    if (distFromCenter < stormRadius) {
+                        ctx.fillStyle = (x + z) % 80 === 0 ? '#4CAF50' : '#45a049';
+                    } else {
+                        ctx.fillStyle = '#8B008B';
+                    }
+                    ctx.fillRect(screenX, screenY, 60, 50);
+                }
+            }
+
+            // Storm border
+            const stormScreenRadius = stormRadius * 1.5;
+            ctx.strokeStyle = '#8B008B';
+            ctx.lineWidth = 5;
+            ctx.beginPath();
+            ctx.arc(canvas.width / 2, canvas.height / 2, stormScreenRadius, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Render bots
+            bots.forEach(bot => {
+                const screenX = canvas.width / 2 + (bot.x - player.position.x) * 1.5;
+                const screenY = canvas.height / 2 + (bot.z - player.position.z) * 1.2;
+                
+                if (screenX > -100 && screenX < canvas.width + 100 && screenY > -100 && screenY < canvas.height + 100) {
+                    // Body
+                    ctx.fillStyle = bot.color;
+                    ctx.fillRect(screenX - 12, screenY - 35, 24, 35);
+                    // Head
+                    ctx.fillStyle = '#FFD7A6';
+                    ctx.fillRect(screenX - 10, screenY - 45, 20, 18);
+                    // Eyes
+                    ctx.fillStyle = '#000';
+                    ctx.fillRect(screenX - 6, screenY - 40, 4, 4);
+                    ctx.fillRect(screenX + 2, screenY - 40, 4, 4);
+                    // Legs
+                    ctx.fillStyle = '#1565C0';
+                    ctx.fillRect(screenX - 10, screenY, 8, 12);
+                    ctx.fillRect(screenX + 2, screenY, 8, 12);
+                    
+                    // Health bar
+                    ctx.fillStyle = '#333';
+                    ctx.fillRect(screenX - 20, screenY - 55, 40, 5);
+                    const healthPercent = bot.health / bot.maxHealth;
+                    ctx.fillStyle = healthPercent > 0.5 ? '#00FF00' : healthPercent > 0.25 ? '#FFA500' : '#FF0000';
+                    ctx.fillRect(screenX - 20, screenY - 55, healthPercent * 40, 5);
+                }
+            });
+
+            // Render bullets
+            bullets.forEach(bullet => {
+                const screenX = canvas.width / 2 + (bullet.x - player.position.x) * 1.5;
+                const screenY = canvas.height / 2 + (bullet.z - player.position.z) * 1.2;
+                ctx.fillStyle = bullet.color || '#FFD700';
+                ctx.fillRect(screenX - 4, screenY - 4, 8, 8);
+            });
+
+            // Crosshair
+            ctx.fillStyle = '#FFF';
+            ctx.fillRect(canvas.width / 2 - 15, canvas.height / 2 - 2, 30, 4);
+            ctx.fillRect(canvas.width / 2 - 2, canvas.height / 2 - 15, 4, 30);
+        }
+    </script>
+</body>
+</html>
